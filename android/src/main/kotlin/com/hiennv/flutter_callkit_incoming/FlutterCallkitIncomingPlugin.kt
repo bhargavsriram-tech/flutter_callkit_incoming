@@ -453,8 +453,17 @@ class FlutterCallkitIncomingPlugin : FlutterPlugin, MethodCallHandler, ActivityA
                     result.success(true)
                 }
 
+                // Speaker through Telecom rather than AudioManager alone.
+                // False when no Telecom call holds this id, so nothing moved.
                 "setAudioRoute" -> {
-                    result.success(true)
+                    val id = call.argument<String>("id")
+                    val speaker = call.argument<Boolean>("speaker") == true
+                    val routed = id != null && (
+                        ModernCallManager.routeSpeaker(id, speaker)
+                            ?: CallkitConnection.find(id)?.let { it.routeSpeaker(speaker); true }
+                            ?: false
+                        )
+                    result.success(routed)
                 }
             }
         } catch (error: Exception) {

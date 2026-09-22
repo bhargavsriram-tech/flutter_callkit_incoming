@@ -9,6 +9,7 @@ import android.os.OutcomeReceiver
 import android.telecom.CallAttributes
 import android.telecom.CallControl
 import android.telecom.CallControlCallback
+import android.telecom.CallEndpoint
 import android.telecom.CallEventCallback
 import android.telecom.CallException
 import android.telecom.DisconnectCause
@@ -204,6 +205,13 @@ internal object ModernCallManager {
         return matched && applied
     }
 
+    /** Null when this call is not on the transactional path. */
+    fun routeSpeaker(callId: String, on: Boolean): Boolean? {
+        if (!usesTransactionalTelecom()) return null
+        val owner = ownership.owner(callId) as? ModernCallOwner ?: return null
+        return owner.routeSpeaker(on)
+    }
+
     private fun finish(callId: String, owner: ModernCallOwner) {
         ownership.finish(callId, owner)
     }
@@ -266,9 +274,28 @@ internal object ModernCallManager {
 
         override fun onCallStreamingStarted(result: Consumer<Boolean>) = result.accept(false)
 
-        override fun onAvailableCallEndpointsChanged(endpoints: List<android.telecom.CallEndpoint>) = Unit
+        @Volatile private var endpoints: List<CallEndpoint> = emptyList()
 
-        override fun onCallEndpointChanged(endpoint: android.telecom.CallEndpoint) = Unit
+        override fun onAvailableCallEndpointsChanged(endpoints: List<CallEndpoint>) {
+            this.endpoints = endpoints
+        }
+
+        /** Same reason as CallkitConnection.routeSpeaker, through CallControl. */
+        fun routeSpeaker(on: Boolean): Boolean {
+            val wanted = if (on) {
+                listOf(CallEndpoint.TYPE_SPEAKER)
+            } else {
+                listOf(CallEndpoint.TYPE_BLUETOOTH, CallEndpoint.TYPE_WIRED_HEADSET, CallEndpoint.TYPE_EARPIECE)
+            }
+            val available = endpoints
+            val target = wanted.firstNotNullOfOrNull { type -> available.firstOrNull { it.endpointType == type } }
+                ?: return false
+            val activeControl = control ?: return false
+            activeControl.requestCallEndpointChange(target, directExecutor, unitOutcome)
+            return true
+        }
+
+        override fun onCallEndpointChanged(endpoint: CallEndpoint) = Unit
 
         override fun onCallStreamingFailed(reason: Int) = Unit
 

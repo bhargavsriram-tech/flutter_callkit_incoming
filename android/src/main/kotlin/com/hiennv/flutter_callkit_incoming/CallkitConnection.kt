@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.telecom.CallAudioState
 import android.telecom.Connection
 import android.telecom.DisconnectCause
 import android.util.Log
@@ -91,6 +92,17 @@ class CallkitConnection(
         }
 
         fun activeCount(): Int = ownership.activeCount()
+    }
+
+    /**
+     * Speaker on or off through Telecom. A self-managed call's audio route
+     * belongs to Telecom, so an AudioManager speakerphone change made
+     * underneath it (what WebRTC does) can be overridden: the app showed
+     * Speaker on while audio stayed in the earpiece.
+     */
+    fun routeSpeaker(on: Boolean) {
+        val supported = callAudioState?.supportedRouteMask ?: 0
+        setAudioRoute(if (on) CallAudioState.ROUTE_SPEAKER else speakerOffRoute(supported))
     }
 
     init {
@@ -274,3 +286,12 @@ class CallkitConnection(
         PendingCallEvents.record(callId, historyScope, kind, historyDirection, historyRemote, outcome, historySession)
     }
 }
+
+/** Where audio goes when speaker is turned off: a connected Bluetooth
+ * headset, otherwise a wired headset or the earpiece (Telecom picks). */
+internal fun speakerOffRoute(supportedRouteMask: Int): Int =
+    if (supportedRouteMask and CallAudioState.ROUTE_BLUETOOTH != 0) {
+        CallAudioState.ROUTE_BLUETOOTH
+    } else {
+        CallAudioState.ROUTE_WIRED_OR_EARPIECE
+    }
