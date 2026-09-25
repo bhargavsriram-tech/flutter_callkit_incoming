@@ -227,6 +227,10 @@ class CallkitIncomingBroadcastReceiver : BroadcastReceiver() {
             "${context.packageName}.${CallkitConstants.ACTION_CALL_ACCEPT}" -> {
                 try {
                     if (driveTelecomConnection(context, data, CallkitConstants.ACTION_CALL_ACCEPT) == false) return
+                    // Also answered from Telecom (headset, car, watch), which
+                    // never passes TransparentActivity: stop the ring now, not
+                    // when the foreground service gets round to it.
+                    FlutterCallkitIncomingPlugin.getInstance()?.getCallkitSoundPlayerManager()?.stop()
                     captureFact(context, data, "accepted")
                     FlutterCallkitIncomingPlugin.notifyEventCallbacks(CallkitEventCallback.CallEvent.ACCEPT, data)
                     // start service and show ongoing call when call is accepted

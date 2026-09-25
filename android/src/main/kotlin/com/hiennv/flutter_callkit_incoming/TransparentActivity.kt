@@ -42,6 +42,14 @@ class TransparentActivity : Activity() {
 
         val data = intent.getBundleExtra("data")
 
+        // Stop the ring here, on the tap. Otherwise it stops only when
+        // CallkitNotificationService handles ACTION_CALL_ACCEPT, which waits
+        // behind the app launch this activity is about to start, and the
+        // caller hears the ringtone carry on after answering.
+        if (action == CallkitConstants.ACTION_CALL_ACCEPT) {
+            FlutterCallkitIncomingPlugin.getInstance()?.getCallkitSoundPlayerManager()?.stop()
+        }
+
         val broadcastIntent = CallkitIncomingBroadcastReceiver.getIntent(this, action, data)
         broadcastIntent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         sendBroadcast(broadcastIntent)
