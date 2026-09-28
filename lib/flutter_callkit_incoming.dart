@@ -170,6 +170,12 @@ class FlutterCallkitIncoming {
     await _channel.invokeMethod("endCall", {'id': id});
   }
 
+  /// End a call the caller abandoned before it was answered: recorded as
+  /// missed rather than declined. Android only.
+  static Future<void> missCall(String id) async {
+    await _channel.invokeMethod("missCall", {'id': id});
+  }
+
   /// Set call has been connected successfully.
   /// On iOS, using Callkit(update a history into the Phone app).
   /// On Android, Nothing(only callback event listener).

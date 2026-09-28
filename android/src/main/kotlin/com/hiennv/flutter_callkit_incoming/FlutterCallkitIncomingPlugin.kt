@@ -369,6 +369,29 @@ class FlutterCallkitIncomingPlugin : FlutterPlugin, MethodCallHandler, ActivityA
                     result.success(true)
                 }
 
+                // The caller gave up before anyone answered. Ends the ring
+                // like endCall, but records "missed" and posts the missed-
+                // call notification; endCall on an unanswered call goes
+                // through Decline and records "declined" (VSP 1.2.5 tester
+                // report, 2026-09-28: missed calls read as declined).
+                "missCall" -> {
+                    val calls = getDataActiveCalls(context)
+                    val data = Data(call.arguments() ?: HashMap())
+                    val currentCall = calls.firstOrNull { it.id == data.id }
+                    if (currentCall != null && context != null) {
+                        context?.sendBroadcast(
+                            if (currentCall.isAccepted) {
+                                CallkitIncomingBroadcastReceiver.getIntentEnded(
+                                    requireNotNull(context), currentCall.toBundle())
+                            } else {
+                                CallkitIncomingBroadcastReceiver.getIntentTimeout(
+                                    requireNotNull(context), currentCall.toBundle())
+                            }
+                        )
+                    }
+                    result.success(true)
+                }
+
                 "callConnected" -> {
                     val calls = getDataActiveCalls(context)
                     val data = Data(call.arguments() ?: HashMap())
