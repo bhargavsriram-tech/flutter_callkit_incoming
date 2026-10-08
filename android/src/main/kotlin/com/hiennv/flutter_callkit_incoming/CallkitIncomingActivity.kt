@@ -56,11 +56,12 @@ class CallkitIncomingActivity : Activity() {
         fun getIntentEnded(context: Context, isAccepted: Boolean): Intent {
             val intent = Intent("${context.packageName}.${ACTION_ENDED_CALL_INCOMING}")
             intent.putExtra("ACCEPTED", isAccepted)
+            // Package only, never a component. The receiver is registered at
+            // run time in onCreate, and Android does not deliver a broadcast
+            // that names a component to run-time receivers - so with the
+            // activity's class set here, the ring screen never closed when the
+            // caller hung up (VSP 1.2.7 tester report IVg4J-FAmQnY).
             intent.setPackage(context.packageName)
-            intent.setClassName(
-                context.packageName,
-                "com.hiennv.flutter_callkit_incoming.CallkitIncomingActivity"
-            )
             return intent
         }
     }
