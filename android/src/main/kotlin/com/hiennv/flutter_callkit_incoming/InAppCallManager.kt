@@ -164,6 +164,7 @@ class InAppCallManager(private val context: Context) {
                 ContextCompat.checkSelfPermission(context, Manifest.permission.MANAGE_OWN_CALLS) != PackageManager.PERMISSION_GRANTED
             ) {
                 CallkitConnection.cancelOutgoing(parsed.id)
+                Log.w(TAG, "Outgoing Telecom call skipped: account=${account != null}")
                 false
             } else {
                 val ownedExtras = Bundle().apply {
@@ -177,9 +178,14 @@ class InAppCallManager(private val context: Context) {
                 telecomManager.placeCall(Uri.fromParts("tel", parsed.handle, null), extras)
                 true
             }
-        } catch (_: Exception) {
+        } catch (error: Exception) {
             CallkitConnection.cancelOutgoing(parsed.id)
-            Log.w(TAG, "Outgoing Telecom call unavailable.")
+            // Digits masked: a Telecom message can carry the dialled number.
+            Log.w(
+                TAG,
+                "Outgoing Telecom call unavailable: ${error.javaClass.name}: " +
+                    "${error.message?.replace(Regex("\\d"), "#")}",
+            )
             false
         }
     }
