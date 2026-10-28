@@ -16,6 +16,11 @@ import androidx.core.content.ContextCompat
 
 internal fun supportsSelfManagedCallHistory(sdkInt: Int): Boolean = sdkInt >= 28
 
+// Null leaves the extra off: below API 28 it does not exist, and the
+// transactional path does not read it.
+internal fun selfManagedCallLogExtra(sdkInt: Int, transactional: Boolean, enabled: Boolean): Boolean? =
+    if (transactional || !supportsSelfManagedCallHistory(sdkInt)) null else enabled
+
 internal class CallOwnership {
     private val outgoingClaims = mutableSetOf<String>()
     private data class OwnedCall(val sessionKey: String?, val owner: Any)
@@ -125,9 +130,13 @@ class InAppCallManager(private val context: Context) {
             }
             val builder = PhoneAccount.builder(getPhoneAccountHandle(), "VSP Phone")
                 .setCapabilities(capabilities)
-            if (!usesTransactionalTelecom() && supportsSelfManagedCallHistory(Build.VERSION.SDK_INT)) {
+            selfManagedCallLogExtra(
+                Build.VERSION.SDK_INT,
+                usesTransactionalTelecom(),
+                isSystemCallLogEnabled(context),
+            )?.let { logCalls ->
                 builder.setExtras(Bundle().apply {
-                    putBoolean(PhoneAccount.EXTRA_LOG_SELF_MANAGED_CALLS, true)
+                    putBoolean(PhoneAccount.EXTRA_LOG_SELF_MANAGED_CALLS, logCalls)
                 })
             }
             telecomManager.registerPhoneAccount(builder.build())

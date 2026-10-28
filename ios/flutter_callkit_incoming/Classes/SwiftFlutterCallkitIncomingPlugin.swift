@@ -235,6 +235,10 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
         case "setAudioRoute":
             result(true)
             break
+        // Android only: iOS logging follows IOSParams.includesCallsInRecents.
+        case "setSystemCallLogEnabled":
+            result(false)
+            break
         default:
             result(FlutterMethodNotImplemented)
         }

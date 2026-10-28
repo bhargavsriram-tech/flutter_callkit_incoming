@@ -464,6 +464,21 @@ class FlutterCallkitIncomingPlugin : FlutterPlugin, MethodCallHandler, ActivityA
                     result.success(callkitNotificationManager?.canUseFullScreenIntent() ?: true)
                 }
 
+                // Saved first, so the next registration uses it whatever
+                // happens here. Re-registering under a live call is not
+                // tried; that change waits for the next app start.
+                "setSystemCallLogEnabled" -> {
+                    val enabled = call.argument<Boolean>("enabled") != false
+                    setSystemCallLogEnabled(context, enabled)
+                    val applied = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                        !usesTransactionalTelecom() &&
+                        CallkitConnection.activeCount() == 0 &&
+                        InAppCallManager(requireNotNull(context)).registerPhoneAccount().also {
+                            PendingCallEvents.reportPhoneAccountRegistration(it)
+                        }
+                    result.success(applied)
+                }
+
                 // EDIT - clear the incoming notification/ring (after accept/decline/timeout)
                 "hideCallkitIncoming" -> {
                     val data = Data(call.arguments() ?: HashMap())

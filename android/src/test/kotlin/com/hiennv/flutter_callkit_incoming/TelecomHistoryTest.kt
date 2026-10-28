@@ -36,6 +36,14 @@ class TelecomHistoryTest {
     }
 
     @Test
+    fun callLogExtraFollowsSettingWhereTelecomReadsIt() {
+        assertEquals(true, selfManagedCallLogExtra(28, transactional = false, enabled = true))
+        assertEquals(false, selfManagedCallLogExtra(28, transactional = false, enabled = false))
+        assertEquals(null, selfManagedCallLogExtra(27, transactional = false, enabled = true))
+        assertEquals(null, selfManagedCallLogExtra(36, transactional = true, enabled = false))
+    }
+
+    @Test
     fun duplicateOutgoingStartOwnsOneConnection() {
         val ownership = CallOwnership()
         val owner = Any()
