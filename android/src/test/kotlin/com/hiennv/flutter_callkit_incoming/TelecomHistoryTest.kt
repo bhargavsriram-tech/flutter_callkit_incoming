@@ -44,6 +44,13 @@ class TelecomHistoryTest {
     }
 
     @Test
+    fun callLogSettingIsOnlyOfferedWhereTelecomReadsIt() {
+        assertTrue(systemCallLogSupported(28, transactional = false))
+        assertFalse(systemCallLogSupported(27, transactional = false))
+        assertFalse(systemCallLogSupported(36, transactional = true))
+    }
+
+    @Test
     fun duplicateOutgoingStartOwnsOneConnection() {
         val ownership = CallOwnership()
         val owner = Any()

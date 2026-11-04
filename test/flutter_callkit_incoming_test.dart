@@ -30,4 +30,13 @@ void main() {
     expect(calls.single.method, 'setSystemCallLogEnabled');
     expect(calls.single.arguments, {'enabled': false});
   });
+
+  test('isSystemCallLogSupported asks the plugin', () async {
+    messenger.setMockMethodCallHandler(channel, (methodCall) async {
+      expect(methodCall.method, 'isSystemCallLogSupported');
+      return true;
+    });
+
+    expect(await FlutterCallkitIncoming.isSystemCallLogSupported(), isTrue);
+  });
 }

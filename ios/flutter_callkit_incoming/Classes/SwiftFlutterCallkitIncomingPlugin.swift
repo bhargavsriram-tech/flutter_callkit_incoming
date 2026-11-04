@@ -236,6 +236,9 @@ public class SwiftFlutterCallkitIncomingPlugin: NSObject, FlutterPlugin, CXProvi
             result(true)
             break
         // Android only: iOS logging follows IOSParams.includesCallsInRecents.
+        case "isSystemCallLogSupported":
+            result(false)
+            break
         case "setSystemCallLogEnabled":
             result(false)
             break

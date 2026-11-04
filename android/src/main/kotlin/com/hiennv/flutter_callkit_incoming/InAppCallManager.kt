@@ -21,6 +21,10 @@ internal fun supportsSelfManagedCallHistory(sdkInt: Int): Boolean = sdkInt >= 28
 internal fun selfManagedCallLogExtra(sdkInt: Int, transactional: Boolean, enabled: Boolean): Boolean? =
     if (transactional || !supportsSelfManagedCallHistory(sdkInt)) null else enabled
 
+/** False where the setting cannot change anything, so an app can hide it. */
+internal fun systemCallLogSupported(sdkInt: Int, transactional: Boolean): Boolean =
+    selfManagedCallLogExtra(sdkInt, transactional, true) != null
+
 internal class CallOwnership {
     private val outgoingClaims = mutableSetOf<String>()
     private data class OwnedCall(val sessionKey: String?, val owner: Any)
@@ -116,6 +120,23 @@ class InAppCallManager(private val context: Context) {
     companion object {
         private const val ACCOUNT_ID = "flutter_callkit_incoming_in_app_call_account"
         private const val TAG = "InAppCallManager"
+
+        // Set when the call log setting changed under a live call; the last
+        // call's end registers the account again instead of the next start.
+        @Volatile
+        private var registrationPending = false
+
+        fun deferRegistration() {
+            registrationPending = true
+        }
+
+        fun registerIfPending(context: Context) {
+            if (!registrationPending) return
+            registrationPending = false
+            PendingCallEvents.reportPhoneAccountRegistration(
+                InAppCallManager(context.applicationContext).registerPhoneAccount(),
+            )
+        }
     }
 
     fun registerPhoneAccount(): Boolean {
